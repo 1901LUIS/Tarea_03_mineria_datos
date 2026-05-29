@@ -1,0 +1,80 @@
+# Punto 8: Modelo de regresión lineal múltiple con statsmodels
+# Objetivo: descubrir patrones y relaciones significativas entre variables independientes y la variable dependiente
+
+import pandas as pd
+import statsmodels.api as sm
+from sklearn.datasets import load_diabetes
+from sklearn.model_selection import train_test_split
+
+# 1. Cargar dataset
+diabetes = load_diabetes(as_frame=True)
+df = diabetes.frame
+
+# 2. Definir variable dependiente e independientes
+# Variable dependiente: target, que representa una medida cuantitativa de progresión de la diabetes
+y = df["target"]
+
+# Variables independientes: características numéricas del paciente
+X = df.drop(columns=["target"])
+
+# 3. Dividir los datos en entrenamiento y prueba
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=42
+)
+
+# 4. Agregar constante para el intercepto del modelo
+X_train_const = sm.add_constant(X_train)
+
+# 5. Entrenar modelo de regresión lineal múltiple usando statsmodels
+modelo = sm.OLS(y_train, X_train_const).fit()
+
+# 6. Mostrar resumen completo del modelo
+print(modelo.summary())
+
+# 7. Obtener coeficientes del modelo
+coeficientes = pd.DataFrame({
+    "Variable": modelo.params.index,
+    "Coeficiente": modelo.params.values,
+    "P-valor": modelo.pvalues.values
+})
+
+print("\nCOEFICIENTES DEL MODELO")
+print(coeficientes)
+
+# 8. Identificar variables estadísticamente significativas
+variables_significativas = coeficientes[coeficientes["P-valor"] < 0.05]
+
+print("\nVARIABLES SIGNIFICATIVAS AL 5%")
+print(variables_significativas)
+
+# 9. Interpretación automática básica
+print("\nINTERPRETACIÓN BÁSICA")
+print("La variable dependiente del modelo es: target.")
+print("Esta variable representa la progresión de la diabetes en los pacientes.")
+
+for _, fila in variables_significativas.iterrows():
+    variable = fila["Variable"]
+    coef = fila["Coeficiente"]
+    pvalor = fila["P-valor"]
+
+    if variable == "const":
+        continue
+
+    if coef > 0:
+        direccion = "positiva"
+    else:
+        direccion = "negativa"
+
+    print(
+        f"La variable {variable} tiene una relación {direccion} "
+        f"con la variable dependiente target. "
+        f"Coeficiente = {coef:.4f}, p-valor = {pvalor:.4f}."
+    )
+
+# 10. Guardar resultados en CSV
+coeficientes.to_csv("coeficientes_modelo_punto8.csv", index=False, encoding="utf-8-sig")
+
+print("\nArchivo generado: coeficientes_modelo_punto8.csv")
